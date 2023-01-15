@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:window_size/window_size.dart';
 import 'package:xml/xml.dart';
 
 void main() {
@@ -14,6 +15,14 @@ void main() {
     final license = await rootBundle.loadString('google_fonts/OFL.txt');
     yield LicenseEntryWithLineBreaks(['google_fonts'], license);
   });
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    setWindowTitle('Court Cases Manager');
+    setWindowMinSize(const Size(900, 480));
+  }
+
   runApp(const MyApp());
 }
 
@@ -43,12 +52,16 @@ class _MyHomePageState extends State<MyHomePage> {
   late File file;
   bool xa = false;
   List<CourtCase> courtCases = [];
-  String gamePath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Grand Theft Auto V";
+  String gamePath =
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Grand Theft Auto V";
+
+  int totalCases = 0, veredictReached = 0, pending = 0, notGuilty = 0;
 
   loadConfig() async {
     debugPrint("loading config");
     final prefs = await SharedPreferences.getInstance();
-    gamePath = prefs.getString('gamePath') ?? "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Grand Theft Auto V";
+    gamePath = prefs.getString('gamePath') ??
+        "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Grand Theft Auto V";
     debugPrint("config loaded");
   }
 
@@ -92,6 +105,11 @@ class _MyHomePageState extends State<MyHomePage> {
       for (var element in crime) {
         if (element[0] == ' ') element = element.substring(1);
       }
+      if (veredict == 'Not Guilty') notGuilty++;
+      if (veredict == 'Waiting for verdict') pending++;
+      if (veredict != 'Not Guilty' && veredict != 'Waiting for verdict') {
+        veredictReached++;
+      }
       courtCases.add(CourtCase(
           id: id,
           name: name,
@@ -104,46 +122,131 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    print(MediaQuery.of(context).size.height);
     return Scaffold(
       body: Center(
-          child: Column(
-        children: [
-          Expanded(
-            flex: 1,
-            child: Row(children: [
-              const Text(
-                "Court Cases Manager",
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+          child: Padding(
+        padding: const EdgeInsets.only(left: 10, right: 10),
+        child: Column(
+          children: [
+            Expanded(
+              flex: 1,
+              child: SizedBox(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        const Expanded(
+                            flex: 4,
+                            child: Text(
+                              "Court Cases Manager",
+                              style: TextStyle(
+                                  fontSize: 30, fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.left,
+                            )),
+                        Expanded(
+                            flex: 1,
+                            child: Row(
+                              children: [],
+                            ))
+                      ]),
+                ),
               ),
-              const Spacer(),
-              IconButton(onPressed: () => showDialog(context: context, builder: (context) => ConfigDialog(gamePath: gamePath,)), icon: const Icon(Icons.settings)),
-            ]),
-          ),
-          Expanded(
-            flex: 10,
-            child: courtCases.isNotEmpty
-                ? ListView.builder(
-                    itemBuilder: ((context, index) => CourtCaseCard(
-                          courtCase: courtCases[index],
-                        )),
-                    itemCount: courtCases.length)
-                : const Text(
-                    "No court cases found, please check your game path in config or continue patrolling"),
-          ),
-          InkWell(
-              onTap: () => _launchUrl(),
-            child: const Text("Court Cases Manager 0.0.1 by Augustt0"),)
-        ],
+            ),
+            const SizedBox(
+              height: 10,
+            ),
+            Expanded(
+              flex: 8,
+              child: Row(children: [
+                Expanded(
+                  flex: 3,
+                  child: SizedBox(
+                    child: ListView.builder(
+                        itemCount: courtCases.length,
+                        itemBuilder: (context, index) {
+                          return CourtCaseCard(courtCase: courtCases[index]);
+                        }),
+                  ),
+                ),
+                const SizedBox(
+                  width: 10,
+                ),
+                Expanded(
+                  flex: 2,
+                  child: SizedBox(
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Card(
+                            color: const Color.fromARGB(255, 235, 235, 235),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(20)),
+                            ),
+                            elevation: 0,
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 200,
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    const Text(
+                                      "Your stats",
+                                      style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    Text(
+                                      "Total cases: ${courtCases.length}",
+                                      style: const TextStyle(fontSize: 20),
+                                    ),
+                                    Text(
+                                      "Veredict reached: $veredictReached",
+                                      style: const TextStyle(fontSize: 20),
+                                    ),
+                                    Text(
+                                      "Pending: $pending",
+                                      style: const TextStyle(fontSize: 20),
+                                    ),
+                                    Text(
+                                      "Not guilty: $notGuilty",
+                                      style: const TextStyle(fontSize: 20),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: _launchUrl,
+                            child: const Text(
+                              "Made by August00\nv0.0.2",
+                              textAlign: TextAlign.center,
+                            ),
+                          )
+                        ]),
+                  ),
+                )
+              ]),
+            )
+          ],
+        ),
       )),
     );
   }
 
   Future<void> _launchUrl() async {
-  if (!await launchUrl(Uri.parse("https://www.lcpdfr.com/profile/405215-august00/"))) {
-    throw 'Could not launch';
+    if (!await launchUrl(
+        Uri.parse("https://www.lcpdfr.com/profile/405215-august00/"))) {
+      throw 'Could not launch';
+    }
   }
-}
-
 }
 
 class CourtCaseCard extends StatelessWidget {
@@ -155,7 +258,8 @@ class CourtCaseCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
-      elevation: 10,
+      elevation: 0,
+      color: const Color.fromARGB(255, 235, 235, 235),
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -179,21 +283,24 @@ class CourtCaseCard extends StatelessWidget {
                 ),
               ],
             ),
-            Container(
-              width: double.infinity,
-              color: courtCase.veredict == "Waiting for veredict"
-                  ? Colors.yellow
-                  : Colors.green,
-              child: Text(
-                "Veredict: ${courtCase.veredict}",
-                textAlign: TextAlign.left,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
-            ),
-            Text(
-              "Published: ${courtCase.published.toString()}",
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
+            Row(
+              children: [
+                const Text("Status: "),
+                SizedBox(
+                  width: 400,
+                  child: Text(
+                    courtCase.veredict,
+                    maxLines: 4,
+                    style: TextStyle(
+                        color: courtCase.veredict == "Not Guilty"
+                            ? Colors.red
+                            : courtCase.veredict == "Pending"
+                                ? Colors.amber
+                                : Colors.green),
+                  ),
+                )
+              ],
+            )
           ],
         ),
       ),
