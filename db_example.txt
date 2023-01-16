@@ -1,0 +1,126 @@
+/* 1 */
+{
+  "_id": {"$guid": "09b2e71d-818e-4134-b2ec-d1a84a42d6e2"},
+  "caseNo": "SA-73875956599",
+  "courtDate": "18/1/2023",
+  "courtDateMillis": {"$numberLong": "1674048756599"},
+  "defendantName": "Dario Mihelcic",
+  "defendantDOB": "13/12/2001",
+  "defendantAge": "21",
+  "offenceDate": "16/1/2023 10:32",
+  "offenceLocation": "Spanish Ave",
+  "offenceList": 
+  [
+    "1. Destruction of Private Property",
+    "2. Grand Theft",
+    "3. Trespassing",
+    "4. Possession of Fentanyl",
+    "5. Possession of Heroin",
+    "6. Possession of Ketamine",
+    "7. 1st Degree Murder"
+  ],
+  "outcomeList": 
+  [
+    "1. Fined $539; 12 mos in prison",
+    "2. Fined $8.000; 8 yrs in prison",
+    "3. Fined $635; Granted probation.",
+    "4. Fined $5.000; Granted probation.",
+    "5. Fined $3.000; 3 yrs in prison",
+    "6. Fined $4.000; 3 yrs in prison",
+    "7. Fined $8.000; 31 yrs in prison"
+  ],
+  "totalPrisonTimeAndFine": "(TOTAL: Fined $29.174; 46 yrs in prison)",
+  "ignoreCourtDate": false,
+  "notes": "None",
+  "pedEntry": 
+  {
+    "pedModel": "A_M_Y_GENSTREET_02",
+    "texHats": 0,
+    "texGlasses": 0,
+    "texEars": 0,
+    "texWatches": 0,
+    "compFace": 0,
+    "compBeard": 0,
+    "compHair": 0,
+    "compShirt": 0,
+    "compPants": 0,
+    "compHands": 0,
+    "compShoes": 0,
+    "compEyes": 0,
+    "compAccessories": 0,
+    "compTasks": 0,
+    "compDecals": 0,
+    "compShirtoverlay": 0,
+    "texFace": 1,
+    "texBeard": 0,
+    "texHair": 0,
+    "texShirt": 0,
+    "texPants": 2,
+    "texHands": 0,
+    "texShoes": 0,
+    "texEyes": 0,
+    "texAccessories": 0,
+    "texTasks": 0,
+    "texDecals": 0,
+    "texShirtoverlay": 0
+  }
+}
+/* 2 */
+{
+  "_id": {"$guid": "1549bc70-805d-4939-940f-b1b8cf50a6d1"},
+  "caseNo": "SA-73876038056",
+  "courtDate": "18/1/2023",
+  "courtDateMillis": {"$numberLong": "1674048838056"},
+  "defendantName": "Daniel Makarov",
+  "defendantDOB": "1/12/2000",
+  "defendantAge": "22",
+  "offenceDate": "16/1/2023 10:33",
+  "offenceLocation": "Spanish Ave",
+  "offenceList": 
+  [
+    "1. Driving While License Suspended",
+    "2. Driving While License Revoked",
+    "3. Possession of Fake Drivers License or ID"
+  ],
+  "outcomeList": 
+  [
+    "1. Fined $581; License susp. for 13 mos; 8 mos in prison",
+    "2. Fined $934; License revoked; Granted probation.",
+    "3. Fined $601; 8 mos in prison"
+  ],
+  "totalPrisonTimeAndFine": "(TOTAL: Fined $2.116; 1 yr, 4 mos in prison)",
+  "ignoreCourtDate": false,
+  "notes": "None",
+  "pedEntry": 
+  {
+    "pedModel": "A_M_Y_STBLA_02",
+    "texHats": 0,
+    "texGlasses": 0,
+    "texEars": 0,
+    "texWatches": 0,
+    "compFace": 1,
+    "compBeard": 0,
+    "compHair": 0,
+    "compShirt": 0,
+    "compPants": 0,
+    "compHands": 0,
+    "compShoes": 0,
+    "compEyes": 0,
+    "compAccessories": 0,
+    "compTasks": 0,
+    "compDecals": 0,
+    "compShirtoverlay": 0,
+    "texFace": 0,
+    "texBeard": 0,
+    "texHair": 2,
+    "texShirt": 4,
+    "texPants": 1,
+    "texHands": 0,
+    "texShoes": 0,
+    "texEyes": 0,
+    "texAccessories": 0,
+    "texTasks": 0,
+    "texDecals": 0,
+    "texShirtoverlay": 0
+  }
+}

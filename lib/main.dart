@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:courtcasesmanager/config.dart';
@@ -5,10 +6,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:process_run/shell.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:window_size/window_size.dart';
-import 'package:xml/xml.dart';
+
+import 'caseCard.dart';
+import 'courtCase.dart';
 
 void main() {
   LicenseRegistry.addLicense(() async* {
@@ -20,7 +24,7 @@ void main() {
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     setWindowTitle('Court Cases Manager');
-    setWindowMinSize(const Size(900, 480));
+    setWindowMinSize(const Size(1000, 480));
   }
 
   runApp(const MyApp());
@@ -48,81 +52,109 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late XmlDocument document;
-  late File file;
   bool xa = false;
-  List<CourtCase> courtCases = [];
+  String searchTerm = "";
   String gamePath =
       "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Grand Theft Auto V";
 
-  int totalCases = 0, veredictReached = 0, pending = 0, notGuilty = 0;
+  late Future<List<CourtCase>> courtCases;
+  int totalCases = 0, veredictReached = 0, pending = 0;
 
-  loadConfig() async {
+  Future<void> loadConfig() async {
     debugPrint("loading config");
     final prefs = await SharedPreferences.getInstance();
     gamePath = prefs.getString('gamePath') ??
-        "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Grand Theft Auto V";
+        "C:/Program Files (x86)/Steam/steamapps/common/Grand Theft Auto V";
     debugPrint("config loaded");
   }
 
   @override
   void initState() {
-    loadConfig();
-
-    try {
-      file = File('''$gamePath\\plugins\\LSPDFR\\LSPDFR+\\CourtCases.xml''');
-      document = XmlDocument.parse(file.readAsStringSync());
-    } catch (e) {
-      xa = true;
-    }
-    debugPrint(gamePath);
-
-    if (!xa) fetchData();
-
+    courtCases = fetchData(context);
     super.initState();
   }
 
-  fetchData() {
-    final total = document.findAllElements('CourtCase');
-    debugPrint(total.toString());
-    for (int i = 0; i < total.length; i++) {
-      final id =
-          int.parse(total.elementAt(i).findElements('SuspectDOB').first.text);
-      final name2 =
-          total.elementAt(i).findElements('SuspectName').first.text.split(' ');
-      final name = name2[0];
-      final lastName = name2[1];
-      final crime =
-          total.elementAt(i).findElements('Crime').first.text.split(',');
-      final veredict =
-          total.elementAt(i).findElements('CourtVerdict').first.text != ''
-              ? total.elementAt(i).findElements('CourtVerdict').first.text
-              : 'Waiting for verdict';
-      final published =
-          total.elementAt(i).findElements('Published').first.text == 'True'
-              ? true
-              : false;
-      for (var element in crime) {
-        if (element[0] == ' ') element = element.substring(1);
-      }
-      if (veredict == 'Not Guilty') notGuilty++;
-      if (veredict == 'Waiting for verdict') pending++;
-      if (veredict != 'Not Guilty' && veredict != 'Waiting for verdict') {
-        veredictReached++;
-      }
-      courtCases.add(CourtCase(
-          id: id,
-          name: name,
-          lastName: lastName,
-          crime: crime,
-          veredict: veredict,
-          published: published));
+  Future<void> convert(BuildContext context) async {
+    var shell = Shell();
+
+    try {
+      debugPrint("Executing translator");
+      await shell.run('''
+CourtCaseTranslator/CourtCaseTranslator.exe "$gamePath"
+  ''');
+    } on Exception catch (e) {
+      showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+                title: const Text("Error"),
+                content: const Text(
+                    "The Court Case Translator exe could not be found. Please make sure it is in CourtCaseTranslator folder."),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("OK"))
+                ],
+              ));
     }
+    debugPrint("Translation end");
+  }
+
+  Future<List<CourtCase>> fetchData(BuildContext context) async {
+    debugPrint("Start loading");
+
+    // Reset data
+
+    totalCases = 0;
+    veredictReached = 0;
+    pending = 0;
+
+    debugPrint("Data resetted");
+
+    await loadConfig();
+    await convert(context);
+
+    debugPrint("Path loaded: $gamePath");
+
+    File file =
+        File('''$gamePath\\plugins\\LSPDFR\\CompuLite\\CourtCases.json''');
+    final contents = await file.readAsString();
+    debugPrint(contents);
+    debugPrint("File loaded");
+
+    List<CourtCase> hold = [];
+
+    List<dynamic> map = jsonDecode(contents);
+
+    for (dynamic json in map) {
+      CourtCase courtCase = CourtCase.fromJson(json);
+      hold.add(courtCase);
+    }
+    debugPrint("Json decoded");
+
+    debugPrint("Stop loading");
+
+    for (CourtCase courtCase in hold) {
+      setState(() {
+        totalCases++;
+      });
+      if (courtCase.courtDateMillis >= DateTime.now().millisecondsSinceEpoch) {
+        setState(() {
+          pending++;
+        });
+      } else {
+        setState(() {
+          veredictReached++;
+        });
+      }
+      debugPrint(DateTime.fromMillisecondsSinceEpoch(courtCase.courtDateMillis)
+          .toString());
+    }
+
+    return hold;
   }
 
   @override
   Widget build(BuildContext context) {
-    print(MediaQuery.of(context).size.height);
     return Scaffold(
       body: Center(
           child: Padding(
@@ -145,11 +177,33 @@ class _MyHomePageState extends State<MyHomePage> {
                                   fontSize: 30, fontWeight: FontWeight.bold),
                               textAlign: TextAlign.left,
                             )),
-                        Expanded(
-                            flex: 1,
-                            child: Row(
-                              children: [],
-                            ))
+                        Row(
+                          children: [
+                            SizedBox(
+                              height: 40,
+                              width: 400,
+                              child: TextField(
+                                onChanged: (value) => setState(() {
+                                  searchTerm = value;
+                                }),
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.all(
+                                          Radius.circular(15))),
+                                  hintText: 'Search',
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                                onPressed: () {
+                                  showDialog(
+                                      context: context,
+                                      builder: ((context) =>
+                                          ConfigDialog(gamePath: gamePath)));
+                                },
+                                icon: const Icon(Icons.settings)),
+                          ],
+                        )
                       ]),
                 ),
               ),
@@ -163,12 +217,47 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(
                   flex: 3,
                   child: SizedBox(
-                    child: ListView.builder(
-                        itemCount: courtCases.length,
-                        itemBuilder: (context, index) {
-                          return CourtCaseCard(courtCase: courtCases[index]);
-                        }),
-                  ),
+                      child: FutureBuilder(
+                    future: courtCases,
+                    builder:
+                        ((context, AsyncSnapshot<List<CourtCase>> snapshot) {
+                      if (snapshot.hasData) {
+                        if (snapshot.data!.isNotEmpty) {
+                          if (searchTerm != "") {
+                            List<CourtCase> filtered = [];
+                            
+                            snapshot.data!.forEach((element) {
+                                if(element.defendantName
+                                  .toLowerCase()
+                                  .contains(searchTerm.toLowerCase())) {
+                                    filtered.add(element);
+                                  }
+                            });
+
+                            return ListView.builder(
+                                itemCount: filtered.length,
+                                itemBuilder: (context, index) {
+                                  return CourtCaseCard(
+                                      courtCase: filtered[index]);
+                                });
+                          } else {
+                            return ListView.builder(
+                                itemCount: snapshot.data!.length,
+                                itemBuilder: (context, index) {
+                                  return CourtCaseCard(
+                                      courtCase: snapshot.data![index]);
+                                });
+                          }
+                        } else {
+                          return const Center(
+                              child: Text(
+                                  "No cases found, check settings for game path or resume patrol to generate cases"));
+                        }
+                      } else {
+                        return const Center(child: Text("Loading..."));
+                      }
+                    }),
+                  )),
                 ),
                 const SizedBox(
                   width: 10,
@@ -203,7 +292,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                       textAlign: TextAlign.center,
                                     ),
                                     Text(
-                                      "Total cases: ${courtCases.length}",
+                                      "Total cases: $totalCases",
                                       style: const TextStyle(fontSize: 20),
                                     ),
                                     Text(
@@ -212,10 +301,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                     ),
                                     Text(
                                       "Pending: $pending",
-                                      style: const TextStyle(fontSize: 20),
-                                    ),
-                                    Text(
-                                      "Not guilty: $notGuilty",
                                       style: const TextStyle(fontSize: 20),
                                     ),
                                   ],
@@ -242,84 +327,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _launchUrl() async {
-    if (!await launchUrl(
-        Uri.parse("https://www.lcpdfr.com/profile/405215-august00/"))) {
+    if (!await launchUrl(Uri.parse(
+        "https://www.lcpdfr.com/downloads/gta5mods/misc/42526-court-cases-manager/"))) {
       throw 'Could not launch';
     }
   }
-}
-
-class CourtCaseCard extends StatelessWidget {
-  final CourtCase courtCase;
-  const CourtCaseCard({super.key, required this.courtCase});
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      elevation: 0,
-      color: const Color.fromARGB(255, 235, 235, 235),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              "${courtCase.name} ${courtCase.lastName}",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Crimes:"),
-                SizedBox(
-                  height: 100,
-                  child: ListView.builder(
-                      itemBuilder: ((context, index) =>
-                          Text(courtCase.crime[index])),
-                      itemCount: courtCase.crime.length),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                const Text("Status: "),
-                SizedBox(
-                  width: 400,
-                  child: Text(
-                    courtCase.veredict,
-                    maxLines: 4,
-                    style: TextStyle(
-                        color: courtCase.veredict == "Not Guilty"
-                            ? Colors.red
-                            : courtCase.veredict == "Pending"
-                                ? Colors.amber
-                                : Colors.green),
-                  ),
-                )
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class CourtCase {
-  final int id;
-  final String name;
-  final String lastName;
-  final List<String> crime;
-  final String veredict;
-  final bool published;
-  CourtCase(
-      {required this.id,
-      required this.name,
-      required this.lastName,
-      required this.crime,
-      required this.veredict,
-      required this.published});
 }
