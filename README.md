@@ -1,16 +1,13 @@
-# courtcasesmanager
+# Court Cases Manager
+![logo@0_5x png c9529bb0aa84234919feb91d6cbb7cc6](https://user-images.githubusercontent.com/48627057/232878154-07d4e7af-842d-4c16-bbaf-c63fa97a7cc1.png)
 
-A new Flutter project.
 
-## Getting Started
+![1066814719_Capturadepantalla2023-01-16154834 thumb png 24fec07726d3c153521aaf228bc0ff97](https://user-images.githubusercontent.com/48627057/232878313-46b63cb7-6f3e-4ce6-831d-c1333d072ee3.png)
+This is a standalone Windows app which allows the officer to follow it's current court cases.
 
-This project is a starting point for a Flutter application.
+REQUIRED Make sure to have CompuLite by [@BejoIjo](https://www.bejoijo.com/post/compulite)
 
-A few resources to get you started if this is your first Flutter project:
+Installation: Extract the content of the zip file anywhere.
+Warning: If the app can't find your game just change the main directory setting inside the app config.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Happy patrol!!
